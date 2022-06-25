@@ -10,8 +10,5 @@ This topic is about : Associations (Basic, With an attribute, Qualified, Composi
 # PROJECT 3
 This topic is about: Inheritance (Overlapping, multi, multi-aspect, dynamic)
 
-# PROJECT 4
-This topic is about: Constraints (NOTE: i did not add this since the topic seemed not that important).
-
 # PROJECT 5:
 This topic is about: ORM (object-relational mapping)
