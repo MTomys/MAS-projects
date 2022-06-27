@@ -1,0 +1,260 @@
+﻿@page "/BanSellers"
+
+@inject HttpClient Http
+
+@using ProductShoppingWebsite.Shared
+@using ProductShoppingWebsite.Shared.Dtos
+@using ProductShoppingWebsite.Shared.Entities
+
+<MudContainer MaxWidth="MaxWidth.Medium">
+	<MudPaper Class="pa-16 ma-2" Elevation="3" Outlined=true>
+		<MudGrid Justify=Justify.SpaceEvenly>
+			<MudItem>
+				<MudNumericField HideSpinButtons=true @bind-Value="sellerIdToSearch" Label="Search By Unique Seller Id" Variant="Variant.Outlined"></MudNumericField>
+			</MudItem>
+			<MudItem>
+				<MudText Color=Color.Error>@sellerFoundMessage</MudText>
+				<MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick=SearchSeller>Search</MudButton>
+			</MudItem>
+			<MudItem>
+				@if (fetchedSellerList.Count != 0)
+				{
+					<MudTable Items=@fetchedSellerList Hover=true @bind-SelectedItem=selectedSeller>
+						<HeaderContent>
+							<MudTh>Unique Seller Id</MudTh>
+							<MudTh>Seller Nickname</MudTh>
+							<MudTh>First Name</MudTh>
+							<MudTh>Last Name</MudTh>
+							<MudTh>Email</MudTh>
+							<MudTh>Is Authorized</MudTh>
+							<MudTh>Is Archived</MudTh>
+							<MudTh>Is Banned</MudTh>
+						</HeaderContent>
+						<RowTemplate>
+							<MudTd DataLabel="Unique Seller Id">@context.UniqueSellerIdentificator</MudTd>
+							<MudTd DataLabel="Seller Nickname">@context.SellerNickname</MudTd>
+							<MudTd DataLabel="First Name">@context.FirstName</MudTd>
+							<MudTd DataLabel="Last Name">@context.LastName</MudTd>
+							<MudTd DataLabel="Email">@context.Email</MudTd>
+							<MudTd DataLabel="Is Authorized">@context.IsAuthorized</MudTd>
+							<MudTd DataLabel="Is Archived">@context.IsArchived</MudTd>
+							<MudTd DataLabel="Is Banned">@context.IsBanned</MudTd>
+						</RowTemplate>
+					</MudTable>
+				}
+			</MudItem>
+		</MudGrid>
+	</MudPaper>
+</MudContainer>
+
+<MudContainer MaxWidth="MaxWidth.Medium">
+	@if (banFormVisible)
+	{
+		<MudGrid>
+			<MudItem xs="12" sm="7">
+				<MudPaper Class="pa-4">
+					<MudItem>
+						@if (sellerBannedSucces)
+						{			
+							<MudText Color=Color.Success>@sellerBannedMessage</MudText>
+						} else
+						{
+							<MudText Color=Color.Error>@sellerBannedMessage</MudText>
+						}
+					</MudItem>
+					<MudForm @ref="form" @bind-IsValid="@formValidationSuccess">
+						<MudTextField T="string" Label="Ban Reason" Required="true" RequiredError="Ban Reason Cannot be empty!" @ref="banReasonDescription"/>
+						<div class="d-flex align-center justify-space-between mt-6">
+							<MudButton Variant="Variant.Filled" Color="Color.Secondary" Disabled="@(!formValidationSuccess)" Class="ml-auto" OnClick="BanSeller">Ban</MudButton>
+						</div>
+					</MudForm>
+				</MudPaper>
+			</MudItem>
+		</MudGrid>
+	}
+</MudContainer>
+<MudContainer MaxWidth="MaxWidth.Medium">
+	<MudGrid Justify=Justify.SpaceBetween>
+		<MudItem>
+			<div style="min-width:200px;">
+				<MudText Inline="true" Class="align-self-center">Selected Seller: @selectedSeller?.SellerNickname (id): @selectedSeller?.UniqueSellerIdentificator</MudText>
+			</div>
+		</MudItem>
+		<MudItem>
+			<MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="SetFormVisible">Ban</MudButton>
+			@if (selectedSeller == null)
+			{
+				<MudText Color="Color.Error">No seller selected!</MudText>
+			}
+		</MudItem>
+	</MudGrid>
+</MudContainer>
+
+<MudContainer MaxWidth="MaxWidth.Large">
+	<MudItem>
+		<MudTable Items="@fetchedReportedSellers" Hover="true" Breakpoint="Breakpoint.Sm" @bind-SelectedItem="selectedSeller">
+			<ColGroup>
+			</ColGroup>
+			<HeaderContent>
+				<MudTh></MudTh>
+				<MudTh>No.</MudTh>
+				<MudTh>Unique Seller Id</MudTh>
+				<MudTh>Seller Nickname</MudTh>
+				<MudTh>First Name</MudTh>
+				<MudTh>Last Name</MudTh>
+				<MudTh>Email</MudTh>
+				<MudTh>Is Authorized</MudTh>
+				<MudTh>Is Archived</MudTh>
+				<MudTh>Is Banned</MudTh>
+			</HeaderContent>
+			<RowTemplate>
+				<MudTd><MudButton Variant="Variant.Outlined" Size="Size.Small" OnClick="@(() => ShowBtnPress(context.TableUtilNumber))">@((context.ShowDetails == true)? "Hide" : "Show") Report Details</MudButton></MudTd>
+				<MudTd DataLabel="No.">@context.TableUtilNumber</MudTd>
+				<MudTd DataLabel="Unique Seller Id">@context.UniqueSellerIdentificator</MudTd>
+				<MudTd DataLabel="Seller Nickname">@context.SellerNickname</MudTd>
+				<MudTd DataLabel="First Name">@context.FirstName</MudTd>
+				<MudTd DataLabel="Last Name">@context.LastName</MudTd>
+				<MudTd DataLabel="Email">@context.Email</MudTd>
+				<MudTd DataLabel="Is Authorized">@context.IsAuthorized</MudTd>
+				<MudTd DataLabel="Is Archived">@context.IsArchived</MudTd>
+				<MudTd DataLabel="Is Banned">@context.IsBanned</MudTd>
+			</RowTemplate>
+			<ChildRowContent>
+				@if (context.ShowDetails)
+				{
+					<MudTr>
+						<td colspan="4">
+							<MudCard Elevation="0">
+								<MudCardHeader>
+									<CardHeaderContent>
+										<MudText Typo="Typo.body1">Report Details for <strong>@context.SellerNickname</strong></MudText>
+									</CardHeaderContent>
+								</MudCardHeader>
+								<MudCardContent Class="pa-0">
+									<MudTable Items="@context.ReportsforSeller" Context="ReportContext" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+										<ColGroup>
+											<col />
+											<col />
+											<col />
+											<col style="width:200px;" />
+										</ColGroup>
+										<HeaderContent>
+											<MudTh>Unique ReportId</MudTh>
+											<MudTh>Description</MudTh>
+											<MudTh>Report Date</MudTh>
+											<MudTh>Issuer</MudTh>
+										</HeaderContent>
+										<RowTemplate>
+											<MudTd DataLabel="Unique Report Id">@ReportContext.UniqueReportIdentificator</MudTd>
+											<MudTd DataLabel="Description">@ReportContext.ReportDescription</MudTd>
+											<MudTd DataLabel="Report Date">@ReportContext.ReportDate</MudTd>
+											<MudTd DataLabel="Issuer">@ReportContext.IssuerId</MudTd>
+										</RowTemplate>
+									</MudTable>
+								</MudCardContent>
+							</MudCard>
+						</td>
+					</MudTr>
+				}
+			</ChildRowContent>
+		</MudTable>
+	</MudItem>
+</MudContainer>
+
+
+@code
+{
+	private SellerDto selectedSeller = null;
+	private int sellerIdToSearch;
+
+	private string sellerFoundMessage = "";
+	private string sellerBannedMessage = "";
+	private bool sellerBannedSucces = false;
+
+	private MudForm form;
+	private bool formValidationSuccess;
+	private bool banFormVisible = false;
+	private MudTextField<string> banReasonDescription;
+
+	private SellerBanDto sellerBanDto = null;
+
+	private List<SellerDto> fetchedSellerList = new List<SellerDto>();
+
+	private List<SellerDto> fetchedReportedSellers = new List<SellerDto>();
+
+
+	protected override async Task OnInitializedAsync()
+	{
+		await FetchReportedSellers();
+	}
+
+	private async Task FetchReportedSellers()
+	{
+		var result = await Http.GetFromJsonAsync<List<SellerDto>>("api/sellers/reported-sellers");
+		if (result is not null)
+		{
+			fetchedReportedSellers = result;
+		}
+	}
+
+	private async Task BanSeller()
+	{
+		if (selectedSeller is not null)
+		{
+			sellerBanDto = new()
+				{
+					SellerDto = selectedSeller,
+					DecisionAdmin = 50,
+					BanReasonDescription = banReasonDescription.Value,
+				};
+		}
+		if (sellerBanDto is not null)
+		{
+			var response = await Http.PostAsJsonAsync("api/bannedsellers", sellerBanDto);
+
+			if (response.IsSuccessStatusCode)
+			{
+				sellerBannedSucces = true;
+				sellerBannedMessage = "Seller banned successfuly";
+				await FetchReportedSellers();
+			}
+			else
+			{
+				sellerBannedSucces = false;
+				sellerBannedMessage = "Could not ban seller.";
+			}
+		}
+	}
+	
+	private async Task SearchSeller()
+	{
+		var response = await Http.GetFromJsonAsync<ServiceResponse<SellerDto>>($"api/sellers/{sellerIdToSearch}");
+		if (response is not null)
+		{
+			if (response.Success)
+			{
+				fetchedSellerList.Clear();
+				fetchedSellerList.Add(response.Data);
+				sellerFoundMessage = "";
+			}
+			else
+			{
+				sellerFoundMessage = "Seller not found";
+			}
+		}
+	}
+
+	private void SetFormVisible()
+	{
+		if (selectedSeller is not null)
+		{
+			banFormVisible = !banFormVisible;
+		}
+	}
+
+	private void ShowBtnPress(int tableUtilNumber)
+	{
+		SellerDto tmpSeller = fetchedReportedSellers.First(f => f.TableUtilNumber == tableUtilNumber);
+		tmpSeller.ShowDetails = !tmpSeller.ShowDetails;
+	}
+}
